@@ -49,7 +49,7 @@ t.start()
 while True:
 	
     # input message we want to send to the server
-	to_send =  input("> ")
+	to_send =  input()
 	    
 	# add the datetime, name & the color of the sender
 	date_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
