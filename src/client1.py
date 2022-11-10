@@ -1,17 +1,30 @@
-import socket
 import random
-from threading import Thread
+import socket
 from datetime import datetime
-from colorama import Fore, init, Back
+from threading import Thread
+
+from colorama import Back, Fore, init
 
 # init colors
 init()
 
 # set the available colors
-colors = [Fore.BLUE, Fore.CYAN, Fore.GREEN, Fore.LIGHTBLACK_EX, 
-    Fore.LIGHTBLUE_EX, Fore.LIGHTCYAN_EX, Fore.LIGHTGREEN_EX, 
-    Fore.LIGHTMAGENTA_EX, Fore.LIGHTRED_EX, Fore.LIGHTWHITE_EX, 
-    Fore.LIGHTYELLOW_EX, Fore.MAGENTA, Fore.RED, Fore.WHITE, Fore.YELLOW
+colors = [
+    Fore.BLUE,
+    Fore.CYAN,
+    Fore.GREEN,
+    Fore.LIGHTBLACK_EX,
+    Fore.LIGHTBLUE_EX,
+    Fore.LIGHTCYAN_EX,
+    Fore.LIGHTGREEN_EX,
+    Fore.LIGHTMAGENTA_EX,
+    Fore.LIGHTRED_EX,
+    Fore.LIGHTWHITE_EX,
+    Fore.LIGHTYELLOW_EX,
+    Fore.MAGENTA,
+    Fore.RED,
+    Fore.WHITE,
+    Fore.YELLOW,
 ]
 
 # choose a random color for the client
@@ -21,11 +34,11 @@ client_color = random.choice(colors)
 name = input("Enter your name: ")
 
 # server's IP address
-# if the server is not on this machine, 
+# if the server is not on this machine,
 # put the private (network) IP address (e.g 192.168.1.2)
 SERVER_HOST = "127.0.0.1"
-SERVER_PORT = 5002 # server's port
-separator_token = "<SEP>" # we will use this to separate the client name & message
+SERVER_PORT = 5002  # server's port
+separator_token = "<SEP>"  # we will use this to separate the client name & message
 
 # initialize TCP socket
 s = socket.socket()
@@ -34,10 +47,12 @@ print(f"[*] Connecting to {SERVER_HOST}:{SERVER_PORT}...")
 s.connect((SERVER_HOST, SERVER_PORT))
 print("[+] Connected.")
 
+
 def listen_for_messages():
     while True:
         message = s.recv(1024).decode()
         print("\n" + message)
+
 
 # make a thread that listens for messages to this client & print them
 t = Thread(target=listen_for_messages)
@@ -47,23 +62,25 @@ t.daemon = True
 t.start()
 
 while True:
-	
+
     # input message we want to send to the server
-	to_send =  input()
-	    
-	# add the datetime, name & the color of the sender
-	date_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
+    to_send = input()
 
-	# a way to exit the program
-	if to_send.lower() == 'q':
-		to_send = (name + " Left the room!")
-		to_send = f"{client_color}[{date_now}] {''}{separator_token}{to_send}{Fore.RESET}"
-		s.send(to_send.encode())
-		break
+    # add the datetime, name & the color of the sender
+    date_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-	to_send = f"{client_color}[{date_now}] {name}{separator_token}{to_send}{Fore.RESET}"
+    # a way to exit the program
+    if to_send.lower() == "q":
+        to_send = name + " Left the room!"
+        to_send = (
+            f"{client_color}[{date_now}] {''}{separator_token}{to_send}{Fore.RESET}"
+        )
+        s.send(to_send.encode())
+        break
+
+    to_send = f"{client_color}[{date_now}] {name}{separator_token}{to_send}{Fore.RESET}"
     # finally, send the message
-	s.send(to_send.encode())
+    s.send(to_send.encode())
 
 # close the socket
 s.close()
