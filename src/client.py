@@ -2,13 +2,20 @@ import socket
 import sys
 import threading
 
-rendezvous = ('147.182.184.215', 55555)
+rendezvous = ('127.0.0.1', 55555)
+port = 0
 
 # connect to rendezvous
 print('connecting to rendezvous server')
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.bind(('0.0.0.0', 50001))
+
+while True:
+	try:
+		sock.bind(('0.0.0.0', port))
+		break
+	except:
+		port += 1
 sock.sendto(b'0', rendezvous)
 
 while True:
