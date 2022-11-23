@@ -1,69 +1,61 @@
 import socket
-import random
-from threading import Thread
-from datetime import datetime
-from colorama import Fore, init, Back
+import sys
+import threading
 
-# init colors
-init()
+rendezvous = ('147.182.184.215', 55555)
 
-# set the available colors
-colors = [Fore.BLUE, Fore.CYAN, Fore.GREEN, Fore.LIGHTBLACK_EX, 
-    Fore.LIGHTBLUE_EX, Fore.LIGHTCYAN_EX, Fore.LIGHTGREEN_EX, 
-    Fore.LIGHTMAGENTA_EX, Fore.LIGHTRED_EX, Fore.LIGHTWHITE_EX, 
-    Fore.LIGHTYELLOW_EX, Fore.MAGENTA, Fore.RED, Fore.WHITE, Fore.YELLOW
-]
+# connect to rendezvous
+print('connecting to rendezvous server')
 
-# choose a random color for the client
-client_color = random.choice(colors)
-
-# prompt the client for a name
-name = input("Enter your name: ")
-
-# server's IP address
-# if the server is not on this machine, 
-# put the private (network) IP address (e.g 192.168.1.2)
-SERVER_HOST = "127.0.0.1"
-SERVER_PORT = 5002 # server's port
-separator_token = "<SEP>" # we will use this to separate the client name & message
-
-# initialize TCP socket
-s = socket.socket()
-print(f"[*] Connecting to {SERVER_HOST}:{SERVER_PORT}...")
-# connect to the server
-s.connect((SERVER_HOST, SERVER_PORT))
-print("[+] Connected.")
-
-def listen_for_messages():
-    while True:
-        message = s.recv(1024).decode()
-        print("\n" + message)
-
-# make a thread that listens for messages to this client & print them
-t = Thread(target=listen_for_messages)
-# make the thread daemon so it ends whenever the main thread ends
-t.daemon = True
-# start the thread
-t.start()
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind(('0.0.0.0', 50001))
+sock.sendto(b'0', rendezvous)
 
 while True:
-	
-    # input message we want to send to the server
-	to_send =  input()
-	    
-	# add the datetime, name & the color of the sender
-	date_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
+    data = sock.recv(1024).decode()
 
-	# a way to exit the program
-	if to_send.lower() == 'q':
-		to_send = (name + " Left the room!")
-		to_send = f"{client_color}[{date_now}] {''}{separator_token}{to_send}{Fore.RESET}"
-		s.send(to_send.encode())
-		break
+    if data.strip() == 'ready':
+        print('checked in with server, waiting')
+        break
 
-	to_send = f"{client_color}[{date_now}] {name}{separator_token}{to_send}{Fore.RESET}"
-    # finally, send the message
-	s.send(to_send.encode())
+data = sock.recv(1024).decode()
+ip, sport, dport = data.split(' ')
+sport = int(sport)
+dport = int(dport)
 
-# close the socket
-s.close()
+print('\ngot peer')
+print('  ip:          {}'.format(ip))
+print('  source port: {}'.format(sport))
+print('  dest port:   {}\n'.format(dport))
+
+# punch hole
+# equiv: echo 'punch hole' | nc -u -p 50001 x.x.x.x 50002
+print('punching hole')
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind(('0.0.0.0', sport))
+sock.sendto(b'0', (ip, dport))
+
+print('ready to exchange messages\n')
+
+# listen for
+# equiv: nc -u -l 50001
+def listen():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(('0.0.0.0', sport))
+
+    while True:
+        data = sock.recv(1024)
+        print('\rpeer: {}\n> '.format(data.decode()), end='')
+
+listener = threading.Thread(target=listen, daemon=True);
+listener.start()
+
+# send messages
+# equiv: echo 'xxx' | nc -u -p 50002 x.x.x.x 50001
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind(('0.0.0.0', dport))
+
+while True:
+    msg = input('> ')
+    sock.sendto(msg.encode(), (ip, sport))
