@@ -10,12 +10,9 @@ print('connecting to rendezvous server')
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-while True:
-	try:
-		sock.bind(('0.0.0.0', port))
-		break
-	except:
-		port += 1
+
+sock.bind(('0.0.0.0', port))
+
 sock.sendto(b'0', rendezvous)
 
 while True:
